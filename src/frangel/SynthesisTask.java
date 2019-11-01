@@ -11,6 +11,8 @@ import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
 
 import frangel.model.FunctionData;
+import frangel.model.expression.Expression;
+import frangel.model.statement.Statement;
 import frangel.utils.Utils;
 
 public class SynthesisTask {
@@ -40,6 +42,9 @@ public class SynthesisTask {
     private Class<?> declaringClass;
     private List<Tag> tags;
 
+    public Map<Class<?>, List<Expression>> expressionFragments;
+    public List<Statement> statementFragments;
+
     private boolean finalized;
     private String group;
 
@@ -60,6 +65,8 @@ public class SynthesisTask {
         excludedMethods = new HashSet<>();
         declaringClass = null;
         tags = new ArrayList<>();
+        expressionFragments = null;
+        statementFragments = null;
 
         finalized = false;
         group = null;

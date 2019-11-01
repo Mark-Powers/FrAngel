@@ -29,13 +29,13 @@ public class FrAngel {
 
     private long lastDebug, lastResolveConditions;
 
-    public static void synthesize(SynthesisTask task) {
-        synthesize(task, 1000000, 1);
+    public static String synthesize(SynthesisTask task) {
+        return synthesize(task, 1000000, 1);
     }
-    public static void synthesize(SynthesisTask task, double seconds) {
-        synthesize(task, seconds, 1);
+    public static String synthesize(SynthesisTask task, double seconds) {
+        return synthesize(task, seconds, 1);
     }
-    public static void synthesize(SynthesisTask task, double seconds, int verbose) {
+    public static String synthesize(SynthesisTask task, double seconds, int verbose) {
         int oldVerbose = Settings.VERBOSE;
         Settings.VERBOSE = verbose;
         FrAngel frangel = new FrAngel(task);
@@ -50,6 +50,7 @@ public class FrAngel {
             System.out.println(Colors.color(Colors.BRIGHT_RED, "Could not find solution."));
         }
         Settings.VERBOSE = oldVerbose;
+        return result.getProgram();
     }
 
     public static boolean test(SynthesisTask task, Class<?> cls) {
@@ -65,9 +66,24 @@ public class FrAngel {
         this.task = task;
 
         if (Settings.MINE_FRAGMENTS) {
-            fragmentPrograms = new HashMap<BitSet, Program>();
             expressionFragments = new HashMap<Class<?>, List<Expression>>();
-            statementFragments = new ArrayList<Statement>();
+            if(task.expressionFragments != null){
+                for(Map.Entry<Class<?>, List<Expression>> e : task.expressionFragments.entrySet()){
+                    if (!expressionFragments.containsKey(e.getKey()))
+                        expressionFragments.put(e.getKey(), new ArrayList<Expression>());
+                    expressionFragments.get(e.getKey()).addAll(e.getValue());
+                }
+                expressionFragments = task.expressionFragments;
+            }
+
+            if(task.statementFragments != null){
+                statementFragments = new ArrayList<Statement>(task.statementFragments);
+                //statementFragments = task.statementFragments;
+            } else {
+                statementFragments = new ArrayList<Statement>();
+            }
+
+            fragmentPrograms = new HashMap<BitSet, Program>();
         }
         nonAngelicPrograms = new HashSet<String>();
         angelicPrograms = new HashSet<String>();
@@ -86,7 +102,6 @@ public class FrAngel {
         ProgramGenerator generator = new ProgramGenerator(task);
         if (Settings.MINE_FRAGMENTS)
             generator.useFragments(expressionFragments, statementFragments);
-
         Program ans = null;
         int numExamples = task.numExamples();
 
@@ -625,17 +640,27 @@ public class FrAngel {
                     fragmentPrograms.remove(otherPassed);
             }
             TimeLogger.stop("FrAngel.mineFragments()");
-            reloadFragments();
+            reloadFragments(p);
         } else {
             TimeLogger.stop("FrAngel.mineFragments()");
         }
         return passed;
     }
 
-    private void reloadFragments() {
+    private void reloadFragments(Program program) {
         TimeLogger.start("FrAngel.reloadFragments()");
         expressionFragments.clear();
+        if(program.getSynthesisTask().expressionFragments != null){
+            for(Map.Entry<Class<?>, List<Expression>> e : program.getSynthesisTask().expressionFragments.entrySet()){
+                if (!expressionFragments.containsKey(e.getKey()))
+                    expressionFragments.put(e.getKey(), new ArrayList<Expression>());
+                expressionFragments.get(e.getKey()).addAll(e.getValue());
+            }
+        }
         statementFragments.clear();
+        if(program.getSynthesisTask().statementFragments != null){
+            statementFragments.addAll(program.getSynthesisTask().statementFragments);
+        }
         List<Expression> expressions = new ArrayList<Expression>();
         List<Statement> statements = new ArrayList<Statement>();
 
